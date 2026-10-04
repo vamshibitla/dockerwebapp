@@ -11,7 +11,7 @@ services:
   application:
     image: appimg
     ports:
-      - "1111:8080"
+      - "1112:8080"
     deploy:
       replicas: 2
     depends_on:
