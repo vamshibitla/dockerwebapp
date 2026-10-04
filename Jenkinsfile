@@ -2,6 +2,12 @@ node {
   stage('SCM') {
     checkout scm
   }
+  stage ("build") {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+
   
   stage('SonarQube Analysis') {
     def mvn = tool 'mymaven';
