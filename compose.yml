@@ -1,5 +1,4 @@
-
-
+---
 services:
   devopsdb:
     image: dbimg
@@ -7,12 +6,24 @@ services:
       - "3306:3306"
     deploy:
       replicas: 1
+    networks:
+      - network1
+      
 
   application:
     image: appimg
     ports:
-      - "1112:8080"
+      - "8080:8080"
     deploy:
       replicas: 2
     depends_on:
       - devopsdb
+    networks:
+      - network2
+     
+
+networks:
+  network1:
+    driver: bridge
+  network2:
+    driver: bridge
