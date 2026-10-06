@@ -1,0 +1,85 @@
+pipeline {
+    agent {
+        label 'prod'
+    }
+    tools {
+        maven 'mymaven'
+    }
+    stages {
+        stage("Code"){
+            steps {
+                git branch: 'master', url: 'https://github.com/vamshibitla/dockerwebapp.git'
+            }
+        }
+        stage("Build"){
+            steps{
+                sh 'mvn clean install'
+            }
+        }
+        stage("CQA"){
+            steps{
+                script {
+                    def mvn = tool 'mymaven';
+                    withSonarQubeEnv('mysonar') {
+                sh '''        
+                mvn clean verify \
+                org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                -Dsonar.projectKey=project1 \
+                -Dsonar.projectName=project1
+                '''
+                 
+                }
+            }
+        }
+    }
+        stage("Quality_gates"){
+        steps{
+            waitForQualityGate abortPipeline: true, credentialsId: 'sonar-cred'
+        }
+    }
+      stage("Artifacts_store"){
+          steps{
+              nexusArtifactUploader artifacts: [[artifactId: 'vprofile', classifier: '', file: 'target/vprofile-v2.war', type: 'war']], credentialsId: 'nexus-cred', groupId: 'com.visualpathit', nexusUrl: '3.218.153.26:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'nexus-repo', version: 'v2'
+          }
+      }
+      stage("Image_build"){
+          steps{
+              sh '''
+              cp -r target Docker-app
+              cp -r target Docker-db
+              docker build -t appimg Docker-app
+              docker build -t dbimg Docker-db
+              '''
+          }
+      }
+      stage("Image_scan"){
+          steps{
+              sh '''
+              trivy image appimg >> dbimg-report.txt
+              trivy image dbimg >> appimg-report.txt
+              '''
+          }
+      }
+      stage("docker_push"){
+          steps{
+              script {
+              withDockerRegistry(credentialsId: 'docker-cred') {
+              sh '''
+              docker tag appimg vamsi01/my_repo:appimg
+              docker tag dbimg vamsi01/my_repo:dbimg
+              docker push vamsi01/my_repo:appimg
+              docker push vamsi01/my_repo:dbimg
+              
+              '''
+          }
+          }
+          }
+      }
+      stage("Deploy"){
+          steps{
+              sh 'docker stack deploy app --compose-file=compose.yml'
+          }
+      }
+    
+}
+}
