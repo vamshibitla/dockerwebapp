@@ -1,0 +1,29 @@
+---
+services:
+  devopsdb:
+    image: vamsi01/my_repo:dbimg
+    ports:
+      - "3306:3306"
+    deploy:
+      replicas: 1
+    networks:
+      - network1
+      
+
+  application:
+    image: vamsi01/my_repo:appimg
+    ports:
+      - "1111:8080"
+    deploy:
+      replicas: 2
+    depends_on:
+      - devopsdb
+    networks:
+      - network2
+     
+
+networks:
+  network1:
+    driver: overlay
+  network2:
+    driver: overlay
