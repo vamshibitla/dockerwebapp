@@ -19,11 +19,9 @@ services:
     depends_on:
       - devopsdb
     networks:
-      - network2
+      - network1
      
 
 networks:
   network1:
-    driver: overlay
-  network2:
     driver: overlay
